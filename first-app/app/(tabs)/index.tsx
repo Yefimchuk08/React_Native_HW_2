@@ -1,7 +1,7 @@
 import {Image} from 'expo-image';
 import {Platform, StyleSheet, Text, View} from 'react-native';
 
-import {HelloWave} from '@/components/hello-wave';
+
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import {ThemedText} from '@/components/themed-text';
 import {ThemedView} from '@/components/themed-view';
@@ -10,6 +10,8 @@ import {useEffect} from "react";
 import axios from "axios";
 import {IGenericResponse} from "@/types/IGenericResponse";
 import {ICategoryResponse} from "@/types/ICategoryResponse";
+import {useGetCategoriesQuery} from "@/services/categoryApi";
+import {IMAGES_URL} from "@/constants/urls";
 
 export default function HomeScreen() {
 
@@ -17,6 +19,8 @@ export default function HomeScreen() {
         loadDatCategories();
         // console.log("---Hello World---");
         },[]);
+
+    const {data: loadData, isLoading} = useGetCategoriesQuery()
 
     const loadDatCategories = async () => {
         try {
@@ -42,58 +46,36 @@ export default function HomeScreen() {
                 <Text className={"text-red-700 text-3xl"}>Козаки</Text>
             </View>
 
-            <ThemedView style={styles.stepContainer}>
-                <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-                <ThemedText>
-                    Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-                    Press{' '}
-                    <ThemedText type="defaultSemiBold">
-                        {Platform.select({
-                            ios: 'cmd + d',
-                            android: 'cmd + m',
-                            web: 'F12',
-                        })}
-                    </ThemedText>{' '}
-                    to open developer tools.
-                </ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.stepContainer}>
-                <Link href="/modal">
-                    <Link.Trigger>
-                        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-                    </Link.Trigger>
-                    <Link.Preview/>
-                    <Link.Menu>
-                        <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')}/>
-                        <Link.MenuAction
-                            title="Share"
-                            icon="square.and.arrow.up"
-                            onPress={() => alert('Share pressed')}
-                        />
-                        <Link.Menu title="More" icon="ellipsis">
-                            <Link.MenuAction
-                                title="Delete"
-                                icon="trash"
-                                destructive
-                                onPress={() => alert('Delete pressed')}
-                            />
-                        </Link.Menu>
-                    </Link.Menu>
-                </Link>
 
-                <ThemedText>
-                    {`Tap the Explore tab to learn more about what's included in this starter app.`}
-                </ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.stepContainer}>
-                <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-                <ThemedText>
-                    {`When you're ready, run `}
-                    <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-                    <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-                    <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-                    <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-                </ThemedText>
+
+            <ThemedView className="px-5 pt-5 flex-row flex-wrap justify-between">
+                {isLoading ? (
+                    <Text>Loading...</Text>
+                ) : (
+                    loadData?.data?.map((category: ICategoryResponse) => (
+
+                        <View
+                            key={category.id}
+                            className="bg-white dark:bg-neutral-900 rounded-2xl shadow w-[48%] mb-4 overflow-hidden"
+                        >
+                            <Image
+                                source={{ uri: IMAGES_URL + `/${category.image}` }}
+                                contentFit="cover"
+                                style={{ width: '100%', height: 128 }}
+                                onError={(e) => console.log('Image error:', e)}
+                            />
+
+                            <View className="p-3">
+                                <Text className="font-bold text-base dark:text-white">
+                                    {category.name}
+                                </Text>
+                                <Text className="text-gray-500 text-sm mt-1" numberOfLines={3}>
+                                    {category.description}
+                                </Text>
+                            </View>
+                        </View>
+                    ))
+                )}
             </ThemedView>
         </ParallaxScrollView>
     );

@@ -10,6 +10,7 @@ import AvatarPicker from "@/components/form/AvatarPicker";
 import {serialize} from "object-to-formdata";
 import {useCreateCategoryMutation} from "@/store/apis/categoryApi";
 import {ThemedText} from "@/components/themed-text";
+import {ICreateCategory} from "@/types/ICreateCategory";
 
 const CreateCategoryScreen = () => {
     const router = useRouter();
@@ -24,19 +25,11 @@ const CreateCategoryScreen = () => {
     });
 
     const onSubmit = async (data: CreateCategoryFormData) => {
-        const formData = new FormData();
-        console.log(data.image)
-        formData.append("Name", data.name);
-        formData.append("Description", data.description);
 
-        formData.append("Image", {
-            uri: data.image.uri,
-            type: data.image.type,
-            name: data.image.name
-        } as any);
-
-
-        const response = await createCategory(formData);
+        const sendData: ICreateCategory = {
+            ...data,
+        }
+        const response = await createCategory(sendData);
         console.log(response);
         router.push("/");
     }
@@ -54,7 +47,7 @@ const CreateCategoryScreen = () => {
                         />
                     )}
                 />
-                <ThemedText style={{color:"red", textAlign:"center"}}>{errors.image?.message}</ThemedText>
+                <ThemedText style={{color:"red", textAlign:"center"}}>{errors.image?.message as string}</ThemedText>
                 <Controller
                     control={control}
                     name="name"

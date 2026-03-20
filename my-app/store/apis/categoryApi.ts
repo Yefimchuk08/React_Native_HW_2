@@ -1,8 +1,9 @@
 // Need to use the React-specific entry point to import createApi
-import {BaseQueryMeta, createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react'
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react'
 import {ICategoryResponse} from "@/types/ICategoryResponse";
 import {BASE_URL} from "@/constants/urls";
-import {BaseQueryError} from "@reduxjs/toolkit/query";
+import {ICreateCategory} from "@/types/ICreateCategory";
+import { serialize } from "object-to-formdata";
 
 // Define a service using a base URL and expected endpoints
 
@@ -13,14 +14,15 @@ export const categoryApi = createApi({
     endpoints: (builder) => ({
         getCategories: builder.query<ICategoryResponse[], void>({
             query:() => '',
+            //@ts-ignore
             transformResponse: (response: {data: ICategoryResponse}) => response.data,
             providesTags: ["Categories"]
         }),
-        createCategory: builder.mutation<void, FormData>({
-            query:(formData) => ({
+        createCategory: builder.mutation<void, ICreateCategory>({
+            query:(body) => ({
                 url: "",
                 method: 'POST',
-                body: formData,
+                body: serialize(body),
             }),
             invalidatesTags: ["Categories","Category"]
         })

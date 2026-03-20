@@ -34,7 +34,7 @@ namespace WEB_API.Controllers.Category
             return await _categoryService.Create(dto);
         }
 
-        [HttpDelete("{id:string}")]
+        [HttpDelete("{id}")]
         public async Task<ServerResponse> Delete(string id)
         {
             return await _categoryService.Delete(id);

@@ -25,11 +25,22 @@ export const categoryApi = createApi({
                 body: serialize(body),
             }),
             invalidatesTags: ["Categories","Category"]
-        })
+        }),
+        deleteCategory: builder.mutation<void, string>({
+            query: id => ({
+                url: `${id}`,
+                method: "DELETE"
+            }),
+            invalidatesTags: ["Categories","Category"]
+        }),
     }),
 })
 
 // Export hooks for usage in functional components, which are
 // auto-generated based on the defined endpoints
 
-export const { useGetCategoriesQuery, useCreateCategoryMutation } = categoryApi
+export const {
+    useGetCategoriesQuery,
+    useCreateCategoryMutation,
+    useDeleteCategoryMutation
+} = categoryApi

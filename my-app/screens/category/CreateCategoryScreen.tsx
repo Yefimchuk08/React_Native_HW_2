@@ -25,7 +25,6 @@ const CreateCategoryScreen = () => {
     });
 
     const onSubmit = async (data: CreateCategoryFormData) => {
-
         const sendData: ICreateCategory = {
             ...data,
         }

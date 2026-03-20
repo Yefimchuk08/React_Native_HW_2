@@ -1,5 +1,5 @@
 import {Image} from 'expo-image';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+import {Alert, Button, Platform, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 
 import {HelloWave} from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
@@ -8,11 +8,23 @@ import {ThemedView} from '@/components/themed-view';
 import {Link} from 'expo-router';
 import {useEffect, useState} from "react";
 import {ICategoryResponse} from "@/types/ICategoryResponse";
-import {useGetCategoriesQuery} from "@/store/apis/categoryApi";
+import {useDeleteCategoryMutation, useGetCategoriesQuery} from "@/store/apis/categoryApi";
 import {IMAGES_URL} from "@/constants/urls";
 
 export default function HomeScreen() {
     const {data, isLoading} = useGetCategoriesQuery()
+    const [deleteCategory] = useDeleteCategoryMutation();
+
+    const deleteHandler = (id: string) => {
+        try {
+            deleteCategory(id).unwrap();
+        }
+        catch (e) {
+            console.log("error", e);
+        }
+    }
+
+
 
     return (
         <ParallaxScrollView
@@ -50,6 +62,25 @@ export default function HomeScreen() {
                                 <Text className="text-gray-500 text-sm mt-1" numberOfLines={3}>
                                     {category.description}
                                 </Text>
+                                <TouchableOpacity className="py-3 rounded-full bg-red-600"
+                                    onPress={() => {
+                                        Alert.alert(
+                                            "Delete Category",
+                                            `Delete "${category.name}"?`,
+                                            [
+                                                { text: "Cancel", style: "cancel" },
+                                                {
+                                                    text: "Delete",
+                                                    style: "destructive",
+                                                    onPress: () => deleteHandler(category.id),
+                                                },
+                                            ]
+                                        );
+                                    }}
+                                >
+                                    <Text className={"text-white text-center"}>Видалити</Text>
+                                </TouchableOpacity>
+
                             </View>
                         </View>
                     ))
@@ -71,7 +102,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     reactLogo: {
-        height: 178,
+        height: 28,
         width: 290,
         bottom: 0,
         left: 0,

@@ -88,6 +88,16 @@ namespace WEB_API.BLL.Services.Categories
             var categories = await _categoryRepository.GetAll().ToListAsync();
             return new ServerResponse { Message = "Успішно отримано категорії", IsSuccess = true, Data = categories };
         }
-    
+
+        public async Task<ServerResponse> GetById(String id)
+        {
+            var category = await _categoryRepository.GetByIdAsync(id);
+            if (category == null)
+            {
+                return new ServerResponse { Message = "Категорія не знайдена", IsSuccess = false, HttpStatusCode = System.Net.HttpStatusCode.NotFound };
+            }
+            return new ServerResponse { Message = "Успішно отримано категорію", IsSuccess = true, Data = category };
+        }
+
     }
 }

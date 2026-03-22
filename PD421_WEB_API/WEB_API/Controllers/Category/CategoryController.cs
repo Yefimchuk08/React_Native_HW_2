@@ -28,6 +28,12 @@ namespace WEB_API.Controllers.Category
             return await _categoryService.GetAll();
         }
 
+        [HttpGet("{id}")]
+        public async Task<ServerResponse> GetById(String id)
+        {
+            return await _categoryService.GetById(id);
+        }
+
         [HttpPost]
         public async Task<ServerResponse> Create([FromForm] CreateCategoryDTO dto)
         {

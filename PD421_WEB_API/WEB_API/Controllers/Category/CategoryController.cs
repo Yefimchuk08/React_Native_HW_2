@@ -8,8 +8,6 @@ namespace WEB_API.Controllers.Category
 {
     [Route("api/categories")]
     [ApiController]
-
-
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryService _categoryService;

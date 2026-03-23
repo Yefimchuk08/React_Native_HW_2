@@ -6,13 +6,9 @@ namespace WEB_API.BLL.Dtos.Category
     public class UpdateCategoryDTO
     {
         public required String Id { get; set; }
+        public String? Name { get; set; }
 
-        [Required]
-        public required String Name { get; set; }
-
-        [Required]
-
-        public required String Description { get; set; }
+        public String? Description { get; set; }
 
         public IFormFile? Image { get; set; } = null;
 

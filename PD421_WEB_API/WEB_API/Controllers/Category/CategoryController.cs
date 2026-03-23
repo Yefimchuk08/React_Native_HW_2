@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using WEB_API.BLL;
 using WEB_API.BLL.Dtos.Category;
-using WEB_API.BLL.Services.Categories;
 using WEB_API.BLL.Services.Category;
 
 namespace WEB_API.Controllers.Category

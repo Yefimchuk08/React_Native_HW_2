@@ -1,12 +1,10 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using WEB_API.BLL.Services.Categories;
 using WEB_API.BLL.Services.Category;
 using WEB_API.BLL.Services.Storage;
 using WEB_API.Controllers.Category;
 using WEB_API.DAL;
-using WEB_API.DAL.repositories.category;
 using WEB_API.DAL.Repositories.Category;
 
 var builder = WebApplication.CreateBuilder(args);

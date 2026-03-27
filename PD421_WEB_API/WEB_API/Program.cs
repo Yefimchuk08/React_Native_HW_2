@@ -1,9 +1,10 @@
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Serilog.Events;
 using System.Text;
 using WEB_API.BLL.Services;
 using WEB_API.BLL.Services.Auth;
@@ -13,108 +14,134 @@ using WEB_API.DAL;
 using WEB_API.DAL.Entities.Identity;
 using WEB_API.DAL.Repositories.Category;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-builder.Services.AddCors(options =>
+try
 {
-    options.AddPolicy("AllowAnyOriginPolicy",
-        policy =>
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+    );
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowAnyOriginPolicy",
+            policy =>
+            {
+                policy.AllowAnyOrigin()
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+            });
+    });
+
+    // Add services to the container.
+
+    builder.Services.AddControllers();
+    // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+
+    builder.Services.AddDbContext<AppDbContext>(opt =>
+        opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    builder.Services
+        .AddIdentity<UserEntity, RoleEntity>(options =>
         {
-            policy.AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
-});
+            options.Password.RequiredLength = 6;
+            options.Password.RequireDigit = false;
+            options.Password.RequireLowercase = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireNonAlphanumeric = false;
+        })
+        .AddEntityFrameworkStores<AppDbContext>()
+        .AddDefaultTokenProviders();
 
-// Add services to the container.
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+    builder.Services.AddScoped<ICategoryService, CategoryService>();
+    builder.Services.AddScoped<IStorageService, StorageService>();
+    builder.Services.AddScoped<IJWTTokenService, JWTTokenService>();
+    //builder.Services.AddTransient<IJWTTokenService, JWTTokenService>();
 
-builder.Services
-    .AddIdentity<UserEntity, RoleEntity>(options =>
+    builder.Services.AddAutoMapper(cfg =>
     {
-        options.Password.RequiredLength = 6;
-        options.Password.RequireDigit = false;
-        options.Password.RequireLowercase = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireNonAlphanumeric = false;
+        cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
+
+    }, AppDomain.CurrentDomain.GetAssemblies());
+
+
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
-
-
-
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<ICategoryService,CategoryService>();
-builder.Services.AddScoped<IStorageService, StorageService>();
-builder.Services.AddScoped<IJWTTokenService, JWTTokenService>();
-//builder.Services.AddTransient<IJWTTokenService, JWTTokenService>();
-
-builder.Services.AddAutoMapper(cfg =>
-{
-    cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
-
-}, AppDomain.CurrentDomain.GetAssemblies());
-
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-
-    options.TokenValidationParameters = new TokenValidationParameters
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateIssuerSigningKey = true,
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero,
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]!))
-    };
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
 
-});
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]!))
+        };
+
+    });
 
 
-var app = builder.Build();
-app.UseCors("AllowAnyOriginPolicy");
+    var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
+    app.UseSerilogRequestLogging();
+
+    app.UseCors("AllowAnyOriginPolicy");
+
+    // Configure the HTTP request pipeline.
+    //if (app.Environment.IsDevelopment())
+    //{
     app.UseSwagger();
     app.UseSwaggerUI();
-//}
+    //}
 
-var path = Path.Combine(builder.Environment.ContentRootPath, "Images");
-Directory.CreateDirectory(path);
+    var path = Path.Combine(builder.Environment.ContentRootPath, "Images");
+    Directory.CreateDirectory(path);
 
-StorageOptions.ImagesPath = path;
+    StorageOptions.ImagesPath = path;
 
-app.UseStaticFiles(new StaticFileOptions
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(path),
+        RequestPath = "/images"
+    });
+
+
+    //app.UseHttpsRedirection();
+
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    await app.SeedDataAsync();
+
+    app.Run();
+}
+catch (Exception ex)
 {
-    FileProvider = new PhysicalFileProvider(path),
-    RequestPath = "/images"
-});
-
-
-//app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-await app.SeedDataAsync();
-
-app.Run();
+    Log.Fatal(ex, "Application falied to start");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

@@ -22,7 +22,6 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Host.UseSerilog((context, services, configuration) => configuration
@@ -41,16 +40,18 @@ try
             });
     });
 
-    // Add services to the container.
-
+    // Controllers
     builder.Services.AddControllers();
-    // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+    // Swagger
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
+    // Database
     builder.Services.AddDbContext<AppDbContext>(opt =>
         opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+    // Identity
     builder.Services
         .AddIdentity<UserEntity, RoleEntity>(options =>
         {
@@ -63,21 +64,19 @@ try
         .AddEntityFrameworkStores<AppDbContext>()
         .AddDefaultTokenProviders();
 
-
-
+    // Services
     builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IStorageService, StorageService>();
     builder.Services.AddScoped<IJWTTokenService, JWTTokenService>();
-    //builder.Services.AddTransient<IJWTTokenService, JWTTokenService>();
 
+    // AutoMapper
     builder.Services.AddAutoMapper(cfg =>
     {
         cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
-
     }, AppDomain.CurrentDomain.GetAssemblies());
 
-
+    // JWT Authentication
     builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -98,9 +97,7 @@ try
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]!))
         };
-
     });
-
 
     var app = builder.Build();
 
@@ -108,13 +105,11 @@ try
 
     app.UseCors("AllowAnyOriginPolicy");
 
-    // Configure the HTTP request pipeline.
-    //if (app.Environment.IsDevelopment())
-    //{
+    // Swagger
     app.UseSwagger();
     app.UseSwaggerUI();
-    //}
 
+    // Images folder
     var path = Path.Combine(builder.Environment.ContentRootPath, "Images");
     Directory.CreateDirectory(path);
 
@@ -126,20 +121,20 @@ try
         RequestPath = "/images"
     });
 
-
-    //app.UseHttpsRedirection();
-
+    // Authentication / Authorization
+    app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
 
+    // Seed database
     await app.SeedDataAsync();
 
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Application falied to start");
+    Log.Fatal(ex, "Application failed to start");
 }
 finally
 {

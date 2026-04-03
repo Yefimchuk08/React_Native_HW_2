@@ -1,49 +1,86 @@
-import {Image} from 'expo-image';
-import {Alert, Button, Platform, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import { Image } from 'expo-image';
+import { Alert, Button, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import {HelloWave} from '@/components/hello-wave';
+import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
-import {ThemedText} from '@/components/themed-text';
-import {ThemedView} from '@/components/themed-view';
-import {Link} from 'expo-router';
-import {useEffect, useState} from "react";
-import {ICategoryResponse} from "@/types/ICategoryResponse";
-import {useDeleteCategoryMutation, useGetCategoriesQuery} from "@/store/apis/categoryApi";
-import {IMAGES_URL} from "@/constants/urls";
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Link } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ICategoryResponse } from '@/types/ICategoryResponse';
+import { useDeleteCategoryMutation, useGetCategoriesQuery } from '@/store/apis/categoryApi';
+import { IMAGES_URL } from '@/constants/urls';
+import { saveUser, getUser, removeUser, User } from '@/storage/storage';
 
 export default function HomeScreen() {
-    const {data, isLoading} = useGetCategoriesQuery()
+    const { data, isLoading } = useGetCategoriesQuery();
     const [deleteCategory] = useDeleteCategoryMutation();
+
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+    // Перевірка користувача при завантаженні
+    useEffect(() => {
+        const fetchUser = async () => {
+            const user = await getUser();
+            setCurrentUser(user);
+        };
+        fetchUser();
+    }, []);
 
     const deleteHandler = (id: string) => {
         try {
             deleteCategory(id).unwrap();
+        } catch (e) {
+            console.log('error', e);
         }
-        catch (e) {
-            console.log("error", e);
-        }
-    }
+    };
 
+    const handleLogin = async () => {
+        const user: User = {
+            email: 'test@gmail.com',
+            name: 'Dima',
+        };
+        await saveUser(user);
+        setCurrentUser(user);
+        Alert.alert('Login', `User ${user.name} logged in!`);
+    };
 
+    const handleLogout = async () => {
+        await removeUser();
+        setCurrentUser(null);
+        Alert.alert('Logout', 'User logged out!');
+    };
 
     return (
         <ParallaxScrollView
-            headerBackgroundColor={{light: '#A1CEDC', dark: '#1D3D47'}}
+            headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
             headerImage={
                 <Image
                     source={require('@/assets/images/partial-react-logo.png')}
                     style={styles.reactLogo}
                 />
-            }>
-
-
-
+            }
+        >
             <ThemedView className="px-5 pt-5 flex-row flex-wrap justify-between">
+                {/* Логін / Логаут */}
+                <View className="mb-5 w-full">
+                    {currentUser ? (
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-black dark:text-white font-bold">
+                                Logged in as {currentUser.name}
+                            </Text>
+                            <Button title="Logout" onPress={handleLogout} />
+                        </View>
+                    ) : (
+                        <Button title="Login" onPress={handleLogin} />
+                    )}
+                </View>
+
+                {/* Категорії */}
                 {isLoading ? (
                     <Text>Loading...</Text>
                 ) : (
                     data?.map((category: ICategoryResponse) => (
-
                         <View
                             key={category.id}
                             className="bg-white dark:bg-neutral-900 rounded-2xl shadow w-[48%] mb-4 overflow-hidden"
@@ -56,37 +93,30 @@ export default function HomeScreen() {
                             />
 
                             <View className="p-3">
-                                <Text className="font-bold text-base dark:text-white">
-                                    {category.name}
-                                </Text>
+                                <Text className="font-bold text-base dark:text-white">{category.name}</Text>
                                 <Text className="text-gray-500 text-sm mt-1" numberOfLines={3}>
                                     {category.description}
                                 </Text>
-                                <TouchableOpacity className="py-3 rounded-full bg-red-600"
+                                <TouchableOpacity
+                                    className="py-3 rounded-full bg-red-600"
                                     onPress={() => {
-                                        Alert.alert(
-                                            "Delete Category",
-                                            `Delete "${category.name}"?`,
-                                            [
-                                                { text: "Cancel", style: "cancel" },
-                                                {
-                                                    text: "Delete",
-                                                    style: "destructive",
-                                                    onPress: () => deleteHandler(category.id),
-                                                },
-                                            ]
-                                        );
+                                        Alert.alert(`Delete Category`, `Delete "${category.name}"?`, [
+                                            { text: 'Cancel', style: 'cancel' },
+                                            {
+                                                text: 'Delete',
+                                                style: 'destructive',
+                                                onPress: () => deleteHandler(category.id),
+                                            },
+                                        ]);
                                     }}
                                 >
-                                    <Text className={"text-white text-center"}>Видалити</Text>
+                                    <Text className={'text-white text-center'}>Видалити</Text>
                                 </TouchableOpacity>
-
                             </View>
                         </View>
                     ))
                 )}
             </ThemedView>
-
         </ParallaxScrollView>
     );
 }
